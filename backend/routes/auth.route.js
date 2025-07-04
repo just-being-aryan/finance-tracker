@@ -12,4 +12,9 @@ router.get('/getUser',protect,getUser)
 
 router.delete('/:id',protect,deleteUser)
 
+
+
+
+
+
 export default router

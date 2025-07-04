@@ -15,7 +15,7 @@ const budgetSchema = new mongoose.Schema(
 
         month : {
             type : String,
-            requied : [true, 'Month is required']
+            required : [true, 'Month is required']
         },
         limit : {
             type : Number,
