@@ -5,6 +5,7 @@ import { errorMiddleware } from './middleware/errorMiddleware.js'
 import expenseRoutes from './routes/expense.route.js'
 import budgetRoutes from './routes/budget.route.js'
 import adminRoutes from './routes/admin.route.js'
+import reportRoutes from './routes/report.route.js';
 
 const app = express()
 
@@ -17,6 +18,9 @@ app.use('/api/users', authRoutes)
 app.use('/api/expenses',expenseRoutes)
 app.use('/api/budget', budgetRoutes)
 app.use('/api/adminRoutes',adminRoutes)
+
+app.use('/api/reports', reportRoutes);
+
 
 
 app.get('/', (req,res) => {
