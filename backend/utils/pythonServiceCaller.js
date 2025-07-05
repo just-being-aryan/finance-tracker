@@ -1,6 +1,6 @@
-const axios = require('axios');
+import axios from axios
 
-const callPythonAnalyzer = async (expenses) => {
+export const callPythonAnalyzer = async (expenses) => {
   try {
     const response = await axios.post('http://localhost:5000/analyze', {
       expenses,
@@ -12,4 +12,4 @@ const callPythonAnalyzer = async (expenses) => {
   }
 };
 
-module.exports = callPythonAnalyzer;
+

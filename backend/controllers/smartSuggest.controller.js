@@ -13,7 +13,7 @@ export const generateSmartSuggestions = asyncHandler(async (req, res) => {
 
   try {
     // const pythonServiceURL = process.env.PYTHON_SERVICE_URL || 'http://localhost:5000';
-    const pythonServiceURL = 'http://localhost:5000'; // 🔥 Hardcoded full URL
+    const pythonServiceURL = 'http://localhost:5000'; 
     const response = await axios.post(`${pythonServiceURL}/analyze`, {
       expenses,
     });
@@ -24,3 +24,6 @@ export const generateSmartSuggestions = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Failed to get suggestions from Python service' });
   }
 });
+
+
+//NOT IMPLEMENTED IN FRONTEND

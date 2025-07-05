@@ -23,7 +23,6 @@ export default function BudgetsPage() {
     const res = await axiosInstance.get('/api/budget')
     console.log("📦 Raw Budget API response:", res.data)
 
-    // Use the correct key: res.data.budget
     const extractedBudgets = Array.isArray(res.data.budget) ? res.data.budget : []
 
     setBudgets(extractedBudgets)
