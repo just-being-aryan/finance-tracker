@@ -14,9 +14,15 @@ const startServer = async() => {
         
         await connectMonogDB()
 
-        await pgPool.query('SELECT NOW()');
-        console.log("PostgreSQL connected successfully")
 
+        try{
+            await pgPool.query('SELECT NOW()');
+            console.log("PostgreSQL connected successfully")
+        }catch(pgErr) {
+            console.error("❌ PostgreSQL connection failed:", pgErr.message);
+        }
+
+        
 
         app.listen(PORT, () => {
             console.log(`Server running on PORT ${PORT}`)
