@@ -2,7 +2,7 @@
 // import Suggestions from '@/component/Suggestions'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/component/sidebar'
+import Sidebar from '@/component/Sidebar'
 import axiosInstance from '@/utils/axiosInstance'
 
 import axios from '@/utils/axiosInstance'
