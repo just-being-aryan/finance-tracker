@@ -75,3 +75,67 @@ export const getRecentReports = asyncHandler(async (req, res) => {
     reports: result.rows,
   });
 });
+
+export const getCategorySpending = asyncHandler(async (req, res) => {
+  const userId = req.user._id.toString()
+  const currentMonth = new Date().toISOString().slice(0, 7)
+
+  const expenses = await Expense.find({
+    user: userId,
+    date: {
+      $gte: new Date(`${currentMonth}-01`),
+      $lt: new Date(`${currentMonth}-31`),
+    },
+  })
+
+  const categorySpending = {}
+  for (const exp of expenses) {
+    categorySpending[exp.category] = (categorySpending[exp.category] || 0) + exp.amount
+  }
+
+  res.status(200).json({ categorySpending })
+})
+
+export const getTopPaymentMethods = asyncHandler(async (req, res) => {
+  const userId = req.user._id.toString()
+  const currentMonth = new Date().toISOString().slice(0, 7)
+
+  const expenses = await Expense.find({
+    user: userId,
+    date: {
+      $gte: new Date(`${currentMonth}-01`),
+      $lt: new Date(`${currentMonth}-31`),
+    },
+  })
+
+  const methodCount = {}
+  for (const exp of expenses) {
+    methodCount[exp.paymentMethod] = (methodCount[exp.paymentMethod] || 0) + 1
+  }
+
+  const topMethods = Object.entries(methodCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([method]) => method)
+
+  res.status(200).json({ topMethods })
+})
+
+
+export const getMonthlyTrend = asyncHandler(async (req, res) => {
+  const userId = req.user._id.toString()
+  const expenses = await Expense.find({ user: userId })
+
+  const monthlyTotals = {}
+
+  for (const exp of expenses) {
+    const month = exp.date.toISOString().slice(0, 7)
+    monthlyTotals[month] = (monthlyTotals[month] || 0) + exp.amount
+  }
+
+  const sorted = Object.entries(monthlyTotals)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([month, total]) => ({ month, total }))
+
+  res.status(200).json({ trend: sorted })
+})
