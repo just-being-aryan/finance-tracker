@@ -1,9 +1,11 @@
 'use client'
-
+// import Suggestions from '@/component/Suggestions'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/component/sidebar'
 import axiosInstance from '@/utils/axiosInstance'
+
+import axios from '@/utils/axiosInstance'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -34,6 +36,8 @@ export default function DashboardPage() {
 
 
   const router = useRouter()
+  // const [expenses, setExpenses] = useState([])
+
   const [stats, setStats] = useState({
     totalBudget: 0,
     totalSpent: 0,
@@ -263,6 +267,10 @@ export default function DashboardPage() {
                 ))}
               </ul>
             </div>
+
+
+            {/* Smart Suggestions Component
+            <Suggestions expenses={expenses} /> */}
           </>
         )}
       </div>

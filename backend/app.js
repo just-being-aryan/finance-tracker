@@ -7,6 +7,8 @@ import budgetRoutes from './routes/budget.route.js'
 import adminRoutes from './routes/admin.route.js'
 import reportRoutes from './routes/report.route.js';
 import cookieParser from 'cookie-parser'
+import smartSuggestRoutes from './routes/smartSuggest.route.js';
+
 
 const app = express()
 
@@ -28,6 +30,8 @@ app.use('/api/budget', budgetRoutes)
 app.use('/api/adminRoutes',adminRoutes)
 
 app.use('/api/reports', reportRoutes);
+
+app.use('/api', smartSuggestRoutes);
 
 
 
