@@ -6,12 +6,20 @@ import expenseRoutes from './routes/expense.route.js'
 import budgetRoutes from './routes/budget.route.js'
 import adminRoutes from './routes/admin.route.js'
 import reportRoutes from './routes/report.route.js';
+import cookieParser from 'cookie-parser'
 
 const app = express()
 
 //Middleware
 
-app.use(cors())
+app.use(cors({
+  origin: 'http://localhost:3000',   // frontend origin
+  credentials: true                  // allow cookies/auth headers
+}))
+
+app.use(cookieParser())
+
+
 app.use(express.json()) 
 
 app.use('/api/users', authRoutes)

@@ -1,80 +1,162 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Sidebar from '@/component/Sidebar'
 import axiosInstance from '@/utils/axiosInstance'
-import Sidebar from '@/component/sidebar'
-import { Card, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+
+const categories = [
+  'Food', 'Rent', 'Healthcare', 'Shopping', 'EMIs', 'Travel', 'Other'
+]
 
 export default function BudgetsPage() {
+  const [budgets, setBudgets] = useState([])
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [formData, setFormData] = useState({ category: '', limit: '' })
   const [alerts, setAlerts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [editingCategory, setEditingCategory] = useState(null)
+
+ const fetchBudgets = async () => {
+  try {
+    const res = await axiosInstance.get('/api/budget')
+    console.log("📦 Raw Budget API response:", res.data)
+
+    // Use the correct key: res.data.budget
+    const extractedBudgets = Array.isArray(res.data.budget) ? res.data.budget : []
+
+    setBudgets(extractedBudgets)
+  } catch (err) {
+    console.error('Failed to fetch budgets:', err)
+    setBudgets([])
+  }
+}
+
+
+  const fetchAlerts = async () => {
+    try {
+      const res = await axiosInstance.get('/api/budget/getBudgetAlerts')
+      const alertMessage = res.data?.alert
+
+      if (alertMessage && alertMessage.length > 0) {
+        if (alertMessage.includes('100%') && alertMessage.includes('exceeded')) {
+          alert(`🔴 ${alertMessage}`)
+        } else if (alertMessage.includes('80%')) {
+          alert(`🟠 ${alertMessage}`)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch alerts:', err)
+    }
+  }
 
   useEffect(() => {
-    const fetchBudgetAlerts = async () => {
-      try {
-        const res = await axiosInstance.get('/api/budget/getBudgetAlerts')
-        setAlerts(res.data.alerts || [])
-      } catch (err) {
-        console.error('Failed to fetch budget alerts:', err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchBudgetAlerts()
+    fetchBudgets()
+    fetchAlerts()
   }, [])
+
+  const openAddOrEditModal = (category = '') => {
+    if (category) {
+      const existing = budgets.find(b => b.category === category)
+      setFormData({ category, limit: existing?.limit || '' })
+      setEditingCategory(category)
+    } else {
+      setFormData({ category: '', limit: '' })
+      setEditingCategory(null)
+    }
+    setIsModalOpen(true)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      await axiosInstance.post('/api/budget/createOrUpdateBudget', formData)
+      alert(editingCategory ? 'Budget updated' : 'Budget added')
+      fetchBudgets()
+      fetchAlerts()
+      setIsModalOpen(false)
+    } catch (err) {
+      console.error('Failed to save budget:', err)
+      alert('Error saving budget')
+    }
+  }
 
   return (
     <main className="flex min-h-screen bg-white dark:bg-black text-black dark:text-white transition-all duration-300">
-      {/* Sidebar on the left */}
       <Sidebar />
-
-      {/* Right main content */}
       <div className="flex-1 p-10">
-        <h1 className="text-3xl font-bold mb-6 text-primary">Budgets</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-primary">Budgets</h1>
+          <Button variant="secondary" onClick={() => openAddOrEditModal()}>
+            Add Budget
+          </Button>
+        </div>
 
-        {loading ? (
-          <p>Loading budgets...</p>
-        ) : alerts.length === 0 ? (
-          <p className="text-muted-foreground">No budget data found.</p>
+        {/* Budget Cards Grid */}
+        {budgets.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No budgets set yet.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {alerts.map((alert, index) => (
-              <Card key={index} className="bg-muted border border-border shadow">
-                <CardContent className="p-6 space-y-4">
-                  <h2 className="text-xl font-semibold text-primary">{alert.category}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {budgets.map((budget) => {
+              const percentage = (budget.spent / budget.limit) * 100
+              let color = 'text-green-600'
+              if (percentage >= 100) color = 'text-red-600'
+              else if (percentage >= 80) color = 'text-yellow-500'
 
-                  <div className="text-sm">
-                    <p>Month: <span className="font-medium">{alert.month}</span></p>
-                    <p>Budget: ₹{alert.budget}</p>
-                    <p>Spent: ₹{alert.spent}</p>
-                    <p>Status:{' '}
-                      <span
-                        className={
-                          alert.status === 'overbudget'
-                            ? 'text-red-600 font-semibold'
-                            : alert.status === 'warning'
-                            ? 'text-yellow-500 font-semibold'
-                            : 'text-green-600 font-semibold'
-                        }
-                      >
-                        {alert.status.toUpperCase()}
-                      </span>
-                    </p>
-                  </div>
-
-                  <div>
-                    <Progress value={alert.usagePercent} className="h-2" />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {alert.usagePercent}% used
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+              return (
+                <div
+                  key={budget._id || budget.category}
+                  className="border border-border rounded-xl p-4 shadow-sm"
+                >
+                  <h2 className="text-xl font-semibold mb-2">{budget.category}</h2>
+                  <p>Limit: ₹ {budget.limit}</p>
+                  <p>Spent: ₹ {budget.spent}</p>
+                  <p className={`font-bold ${color}`}>
+                    Used: {Math.min(percentage, 100).toFixed(1)}%
+                  </p>
+                  <Button
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => openAddOrEditModal(budget.category)}
+                  >
+                    {percentage ? 'Update Budget' : 'Set Budget'}
+                  </Button>
+                </div>
+              )
+            })}
           </div>
         )}
+
+        {/* Add/Edit Modal */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent>
+            <DialogTitle>{editingCategory ? 'Update Budget' : 'Add Budget'}</DialogTitle>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <select
+                className="w-full p-2 border rounded dark:bg-black dark:border-gray-700"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                required
+                disabled={!!editingCategory}
+              >
+                <option value="">Select Category</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              <Input
+                type="number"
+                placeholder="Monthly Limit (₹)"
+                value={formData.limit}
+                onChange={(e) => setFormData({ ...formData, limit: e.target.value })}
+                required
+              />
+              <Button type="submit">{editingCategory ? 'Update' : 'Save'}</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </main>
   )

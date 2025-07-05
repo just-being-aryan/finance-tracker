@@ -121,3 +121,19 @@ export const getBudgetAlerts = asyncHandler(async (req, res) => {
     alerts,
   })
 })
+
+
+export const getDashboardStats = asyncHandler(async (req, res) => {
+  const budgets = await Budget.find({ user: req.user._id })
+  const expenses = await Expense.find({ user: req.user._id })
+
+  const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0)
+  const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const numberOfBudgets = budgets.length
+
+  res.status(200).json({
+    totalBudget,
+    totalSpent,
+    numberOfBudgets
+  })
+})
