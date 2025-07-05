@@ -14,9 +14,19 @@ const app = express()
 
 //Middleware
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://finance-tracker-navy-omega.vercel.app'
+]
 app.use(cors({
-  origin: 'http://localhost:3000',   // frontend origin
-  credentials: true                  // allow cookies/auth headers
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true
 }))
 
 app.use(cookieParser())
