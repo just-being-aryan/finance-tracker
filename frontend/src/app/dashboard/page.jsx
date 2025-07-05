@@ -4,8 +4,35 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/component/sidebar'
 import axiosInstance from '@/utils/axiosInstance'
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+} from 'chart.js'
+import { Pie, Line } from 'react-chartjs-2'
+
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title
+)
 
 export default function DashboardPage() {
+
+
+
+
   const router = useRouter()
   const [stats, setStats] = useState({
     totalBudget: 0,
@@ -13,6 +40,9 @@ export default function DashboardPage() {
     numberOfBudgets: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [categoryData, setCategoryData] = useState({ labels: [], data: [] })
+  const [trendData, setTrendData] = useState({ labels: [], data: [] })
+  const [topMethods, setTopMethods] = useState([])
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -33,7 +63,54 @@ export default function DashboardPage() {
       }
     }
 
+    const fetchCategorySpending = async () => {
+      try {
+        const res = await axiosInstance.get('/api/reports/categorySpending')
+       
+
+        const categorySpending = res.data.categorySpending || {}
+
+        const labels = Object.keys(categorySpending)
+        const data = Object.values(categorySpending)
+
+        setCategoryData({ labels, data })
+      } catch (err) {
+    console.error('Failed to load category spending:', err)
+  }
+}
+
+    const fetchTopMethods = async () => {
+
+      
+
+      try {
+        const res = await axiosInstance.get('/api/reports/topMethods')
+            console.log("💳 Top Methods:", res.data)    // inside fetchTopMethods
+        setTopMethods(res.data?.topMethods || [])
+      } catch (err) {
+        console.error('Failed to load top methods:', err)
+      }
+    }
+
+      const fetchTrend = async () => {
+      try {
+        const res = await axiosInstance.get('/api/reports/trend')
+        console.log("📈 Trend Data:", res.data)
+
+        const trend = res.data.trend || []
+
+        const labels = trend.map(entry => entry.month)
+        const data = trend.map(entry => entry.total)
+
+        setTrendData({ labels, data })
+      } catch (err) {
+        console.error('Failed to load trend data:', err)
+      }
+}
     fetchStats()
+    fetchCategorySpending()
+    fetchTopMethods()
+    fetchTrend()
   }, [router])
 
   const usagePercent = stats.totalBudget > 0
@@ -85,6 +162,106 @@ export default function DashboardPage() {
               </div>
 
               <p className="text-sm text-muted-foreground">{usagePercent}% used</p>
+            </div>
+
+            {/* Reports Section */}
+            <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="p-6 rounded-xl bg-muted border border-border">
+                <h3 className="text-xl font-semibold mb-4">📊 Category-wise Spending</h3>
+                <Pie
+                  data={{
+                    labels: categoryData.labels,
+                    datasets: [
+                      {
+                        label: 'Spending by Category',
+                        data: categoryData.data,
+                        backgroundColor: [
+                          '#F87171', '#FBBF24', '#34D399', '#60A5FA', '#A78BFA', '#F472B6'
+                        ],
+                      },
+                    ],
+                  }}
+                  
+                />
+              </div>
+
+              <div className="p-6 rounded-xl bg-muted border border-border">
+                <h3 className="text-xl font-semibold mb-4">📈 Monthly Spending Trend</h3>
+                <Line
+                    data={{
+                      labels: trendData.labels,
+                      datasets: [
+                        {
+                          label: 'Spending Over Time',
+                          data: trendData.data,
+                          fill: false,
+                          borderColor: '#EF4444', // 🔴 red line
+                          backgroundColor: '#EF4444',
+                          tension: 0.3,
+                          pointRadius: 5,
+                          pointHoverRadius: 7,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          labels: {
+                            color: '#fff', // white for dark mode
+                            font: {
+                              size: 14,
+                            },
+                          },
+                        },
+                        title: {
+                          display: true,
+                          text: 'Monthly Spending',
+                          color: '#fff',
+                          font: {
+                            size: 18,
+                          },
+                        },
+                      },
+                      scales: {
+                        x: {
+                          ticks: {
+                            color: '#fff',
+                            font: {
+                              size: 14,
+                            },
+                          },
+                          grid: {
+                            color: '#444',
+                          },
+                        },
+                        y: {
+                          ticks: {
+                            color: '#fff',
+                            font: {
+                              size: 14,
+                            },
+                          },
+                          grid: {
+                            color: '#444',
+                          },
+                        },
+                      },
+                    }}
+                  />
+              </div>
+            </div>
+
+            {/* Top Payment Methods */}
+            <div className="mt-10 p-6 bg-muted border border-border rounded-xl">
+              <h3 className="text-xl font-semibold mb-4">💳 Top 3 Payment Methods</h3>
+              <ul className="list-disc pl-6">
+                {topMethods.map((method, index) => (
+                  <li key={index} className="text-lg">
+                    {index + 1}. {method}
+                  </li>
+                ))}
+              </ul>
             </div>
           </>
         )}

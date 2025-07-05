@@ -9,4 +9,6 @@ router.get('/recent', protect, getRecentReports);
 router.get('/categorySpending', protect, getCategorySpending)
 router.get('/topMethods', protect, getTopPaymentMethods)
 router.get('/trend', protect, getMonthlyTrend)
+
+
 export default router;

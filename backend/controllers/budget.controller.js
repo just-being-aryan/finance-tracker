@@ -44,25 +44,39 @@ export const createOrUpdateBudget = asyncHandler(async (req, res) => {
 })
 
 
-
 export const getBudget = asyncHandler(async (req, res) => {
-  const { month, category } = req.query
+  const userId = req.user._id.toString();
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
-  const filter = {
-    user: req.user._id,
-  }
+  const budgets = await Budget.find({ user: userId, month: currentMonth });
 
-  if (month) filter.month = month
-  if (category) filter.category = category
+  // Calculate spent per category
+  const enrichedBudgets = await Promise.all(
+    budgets.map(async (budget) => {
+      const expenses = await Expense.find({
+        user: userId,
+        category: budget.category,
+        date: {
+          $gte: new Date(`${currentMonth}-01`),
+          $lt: new Date(`${currentMonth}-31`),
+        },
+      });
 
-  const budget = await Budget.find(filter)
+      const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+      return {
+        ...budget._doc,
+        spent: totalSpent,
+      };
+    })
+  );
 
   res.status(200).json({
     success: true,
     message: 'Budget fetched successfully',
-    budget,
-  })
-})
+    budget: enrichedBudgets,
+  });
+});
 
 
 export const getBudgetAlerts = asyncHandler(async (req, res) => {
