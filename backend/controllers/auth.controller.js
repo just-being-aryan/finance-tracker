@@ -10,6 +10,8 @@ const generateToken = (userId) => {
     });
 };
 
+
+
 //@route POST /api/isers/register
 
 export const registerUser = asyncHandler(async (req,res) =>{ 
@@ -90,7 +92,7 @@ export const loginUser = asyncHandler( async (req,res) => {
             _id : user._id,
             username : user.username,
             email : user.email,
-            token : generateToken(user._id),
+            token : token
         }
     })
 
