@@ -45,9 +45,6 @@ export const generateMonthlyReport = asyncHandler(async (req, res) => {
   });
 });
 
-
-
-
 export const getRecentReports = asyncHandler(async (req, res) => {
   const userId = req.user._id.toString();
 
@@ -93,7 +90,15 @@ export const getCategorySpending = asyncHandler(async (req, res) => {
     categorySpending[exp.category] = (categorySpending[exp.category] || 0) + exp.amount
   }
 
-  res.status(200).json({ categorySpending })
+  // Convert object to array format that frontend expects
+  const categorySpendingArray = Object.entries(categorySpending).map(([category, total]) => ({
+    category,
+    total
+  }))
+
+  res.status(200).json({ 
+    categorySpending: categorySpendingArray 
+  })
 })
 
 export const getTopPaymentMethods = asyncHandler(async (req, res) => {
@@ -118,9 +123,10 @@ export const getTopPaymentMethods = asyncHandler(async (req, res) => {
     .slice(0, 3)
     .map(([method]) => method)
 
-  res.status(200).json({ topMethods })
-})
-
+  res.status(200).json({ 
+    topMethods: topMethods || [] // Ensure it's always an array
+  })
+}) // ← Added missing closing brace here!
 
 export const getMonthlyTrend = asyncHandler(async (req, res) => {
   const userId = req.user._id.toString()
@@ -133,9 +139,11 @@ export const getMonthlyTrend = asyncHandler(async (req, res) => {
     monthlyTotals[month] = (monthlyTotals[month] || 0) + exp.amount
   }
 
-  const sorted = Object.entries(monthlyTotals)
+  const trend = Object.entries(monthlyTotals)
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([month, total]) => ({ month, total }))
 
-  res.status(200).json({ trend: sorted })
+  res.status(200).json({ 
+    trend: trend || [] // Ensure it's always an array
+  })
 })
