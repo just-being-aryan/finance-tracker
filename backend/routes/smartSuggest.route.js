@@ -1,8 +1,8 @@
-import express from 'express';
-import { generateSmartSuggestions } from '../controllers/smartSuggest.controller.js';
+// import express from 'express';
+// import { generateSmartSuggestions } from '../controllers/smartSuggest.controller.js';
 
-const router = express.Router();
+// const router = express.Router();
 
-router.post('/smart-suggestions', generateSmartSuggestions);
+// router.post('/smart-suggestions', generateSmartSuggestions);
 
-export default router;
+// export default router;
