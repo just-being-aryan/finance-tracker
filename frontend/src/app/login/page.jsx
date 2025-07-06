@@ -31,7 +31,13 @@ export default function LoginPage() {
     try {
       const res = await axiosInstance.post('/api/users/login', formData)
 
-      localStorage.setItem('token', res.data.token)
+       
+  console.log("🔍 Full login response:", res.data) // Add this
+  console.log("🔍 Token from response:", res.data.token) // Add this
+  console.log("🔍 User object:", res.data.user) // Add this
+  console.log("🔍 User token:", res.data.user?.token) // Add this
+
+      localStorage.setItem('token', res.data.user.token)
 
       alert('Login successful!')
       router.push('/dashboard')
