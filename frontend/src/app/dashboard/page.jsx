@@ -33,9 +33,13 @@ ChartJS.register(
 export default function DashboardPage() {
 
 
+
+
   const router = useRouter()
-  
-const [loading, setLoading] = useState(true)
+  // const [expenses, setExpenses] = useState([])
+
+
+  const [loading, setLoading] = useState(true)
 const [error, setError] = useState(null)
 const [stats, setStats] = useState(null)
 const [categorySpending, setCategorySpending] = useState(null)
@@ -52,70 +56,35 @@ const [trendData, setTrendData] = useState(null)
   // const [trendData, setTrendData] = useState({ labels: [], data: [] })
   // const [topMethods, setTopMethods] = useState([])
 
-//   useEffect(() => {
-//     const fetchStats = async () => {
-//       try {
-//         const statsRes = await axiosInstance.get('/api/budget/dashboardStats')
+  useEffect(() => {
+  const fetchDashboardData = async () => {
+    try {
+      const [
+        statsRes,
+        categorySpendingRes,
+        topMethodsRes,
+        trendRes
+      ] = await Promise.all([
+        axiosInstance.get('/api/budget/dashboardStats'),
+        axiosInstance.get('/api/reports/categorySpending'),
+        axiosInstance.get('/api/reports/topMethods'),
+        axiosInstance.get('/api/reports/trend')
+      ])
 
-//         const { totalBudget, totalSpent, numberOfBudgets } = statsRes.data
-
-//         setStats({ totalBudget, totalSpent, numberOfBudgets })
-//       } catch (err) {
-//         console.error('Failed to load stats:', err.message)
-
-//         if (err.response?.status === 401) {
-//           router.push('/login')
-//         }
-//       } finally {
-//         setLoading(false)
-//       }
-//     }
-
-//     const fetchCategorySpending = async () => {
-//       try {
-//         const res = await axiosInstance.get('/api/reports/categorySpending')
-       
-
-//         const categorySpending = res.data.categorySpending || {}
-
-//         const labels = Object.keys(categorySpending)
-//         const data = Object.values(categorySpending)
-
-//         setCategoryData({ labels, data })
-//       } catch (err) {
-//     console.error('Failed to load category spending:', err)
-//   }
-// }
-
-useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [
-          statsRes,
-          categorySpendingRes,
-          topMethodsRes,
-          trendRes
-        ] = await Promise.all([
-          axiosInstance.get('/api/budget/dashboardStats'),
-          axiosInstance.get('/api/reports/categorySpending'),
-          axiosInstance.get('/api/reports/topMethods'),
-          axiosInstance.get('/api/reports/trend'),
-        ])
-
-        setStats(statsRes.data)
-        setCategorySpending(categorySpendingRes.data)
-        setTopMethods(topMethodsRes.data)
-        setTrend(trendRes.data)
-      } catch (err) {
-        console.error('❌ Dashboard API fetch failed:', err)
-        setError('Failed to load dashboard data. Please login again.')
-      } finally {
-        setLoading(false)
-      }
+      setStats(statsRes.data)
+      setCategorySpending(categorySpendingRes.data)
+      setTopMethods(topMethodsRes.data)
+      setTrendData(trendRes.data)
+    } catch (err) {
+      console.error('Dashboard API error:', err.message)
+      setError(err)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    fetchDashboardData()
-  }, [])
+  fetchDashboardData()
+}, [])
 
     const fetchTopMethods = async () => {
 
