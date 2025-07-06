@@ -7,6 +7,8 @@ for admin :
 admin@example.com
 adminpass123
 
+Live Link -> https://finance-tracker-navy-omega.vercel.app/
+
 
 # 🌗 Next.js + Tailwind CSS Theme Toggle App
 
