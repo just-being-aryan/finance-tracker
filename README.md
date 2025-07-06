@@ -37,6 +37,11 @@ A modern web application built with **Next.js 14+** and **Tailwind CSS 4.1+**, f
 - ✅ Works with both `pages/` and `app/` routers in Next.js
 
 ---
+Extra Features :
+
+1) Dashboard Budget that displays the total Budget of the user
+2) Used shadcn Libraries for enhancing UI
+3) used next themes and react icons and added a theme switcher using react icons
 
 
 ---
