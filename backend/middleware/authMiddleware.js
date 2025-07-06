@@ -8,6 +8,7 @@ export const protect = async (req, res, next) => {
     req.cookies?.token || req.headers.authorization?.split(' ')[1]
 
   if (!token) {
+    console.log("❌ No token received")
     return res.status(401).json({ message: "Unauthorized: No token provided" })
   }
 
@@ -20,6 +21,7 @@ export const protect = async (req, res, next) => {
     req.user = user
     next()
   } catch (err) {
+    console.log("❌ Token invalid:", err.message)
     return res.status(401).json({ message: "Unauthorized: Invalid token" })
   }
 }
