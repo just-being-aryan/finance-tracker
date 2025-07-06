@@ -31,20 +31,15 @@ ChartJS.register(
 )
 
 export default function DashboardPage() {
-
-
-
-
   const router = useRouter()
   // const [expenses, setExpenses] = useState([])
 
-
   const [loading, setLoading] = useState(true)
-const [error, setError] = useState(null)
-const [stats, setStats] = useState(null)
-const [categorySpending, setCategorySpending] = useState(null)
-const [topMethods, setTopMethods] = useState(null)
-const [trendData, setTrendData] = useState(null)
+  const [error, setError] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [categorySpending, setCategorySpending] = useState(null)
+  const [topMethods, setTopMethods] = useState(null)
+  const [trendData, setTrendData] = useState(null)
 
   // const [stats, setStats] = useState({
   //   totalBudget: 0,
@@ -57,70 +52,42 @@ const [trendData, setTrendData] = useState(null)
   // const [topMethods, setTopMethods] = useState([])
 
   useEffect(() => {
-  const fetchDashboardData = async () => {
-    try {
-      const [
-        statsRes,
-        categorySpendingRes,
-        topMethodsRes,
-        trendRes
-      ] = await Promise.all([
-        axiosInstance.get('/api/budget/dashboardStats'),
-        axiosInstance.get('/api/reports/categorySpending'),
-        axiosInstance.get('/api/reports/topMethods'),
-        axiosInstance.get('/api/reports/trend')
-      ])
-
-      setStats(statsRes.data)
-      setCategorySpending(categorySpendingRes.data)
-      setTopMethods(topMethodsRes.data)
-      setTrendData(trendRes.data)
-    } catch (err) {
-      console.error('Dashboard API error:', err.message)
-      setError(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  fetchDashboardData()
-}, [])
-
-    const fetchTopMethods = async () => {
-
-      
-
+    const fetchDashboardData = async () => {
       try {
-        const res = await axiosInstance.get('/api/reports/topMethods')
-            console.log("💳 Top Methods:", res.data)    // inside fetchTopMethods
-        setTopMethods(res.data?.topMethods || [])
+        const statsRes = await axiosInstance.get('/api/budget/dashboardStats')
+        const categorySpendingRes = await axiosInstance.get('/api/reports/categorySpending')
+        const topMethodsRes = await axiosInstance.get('/api/reports/topMethods')
+        const trendRes = await axiosInstance.get('/api/reports/trend')
+
+        setStats(statsRes.data)
+
+        const spending = categorySpendingRes.data.categorySpending || []
+        const categoryLabels = spending.map(entry => entry.category)
+        const categoryAmounts = spending.map(entry => entry.total)
+        setCategorySpending(spending)
+        setCategoryData({ labels: categoryLabels, data: categoryAmounts })
+
+        setTopMethods(topMethodsRes.data?.topMethods || [])
+
+        const trend = trendRes.data.trend || []
+        const trendLabels = trend.map(entry => entry.month)
+        const trendAmounts = trend.map(entry => entry.total)
+        setTrendData({ labels: trendLabels, data: trendAmounts })
+
       } catch (err) {
-        console.error('Failed to load top methods:', err)
+        console.error('Dashboard API error:', err.message)
+        setError(err)
+      } finally {
+        setLoading(false)
       }
     }
 
-      const fetchTrend = async () => {
-      try {
-        const res = await axiosInstance.get('/api/reports/trend')
-        console.log("📈 Trend Data:", res.data)
-
-        const trend = res.data.trend || []
-
-        const labels = trend.map(entry => entry.month)
-        const data = trend.map(entry => entry.total)
-
-        setTrendData({ labels, data })
-      } catch (err) {
-        console.error('Failed to load trend data:', err)
-      }
-}
-    fetchStats()
-    fetchCategorySpending()
-    fetchTopMethods()
-    fetchTrend()
+    fetchDashboardData()
   }, [router])
 
-  const usagePercent = stats.totalBudget > 0
+  const [categoryData, setCategoryData] = useState({ labels: [], data: [] }) // ✅ Moved here after useEffect
+
+  const usagePercent = stats?.totalBudget > 0
     ? Math.round((stats.totalSpent / stats.totalBudget) * 100)
     : 0
 
@@ -188,74 +155,73 @@ const [trendData, setTrendData] = useState(null)
                       },
                     ],
                   }}
-                  
                 />
               </div>
 
               <div className="p-6 rounded-xl bg-muted border border-border">
                 <h3 className="text-xl font-semibold mb-4">📈 Monthly Spending Trend</h3>
                 <Line
-                    data={{
-                      labels: trendData.labels,
-                      datasets: [
-                        {
-                          label: 'Spending Over Time',
-                          data: trendData.data,
-                          fill: false,
-                          borderColor: '#EF4444', // 🔴 red line
-                          backgroundColor: '#EF4444',
-                          tension: 0.3,
-                          pointRadius: 5,
-                          pointHoverRadius: 7,
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: {
-                          labels: {
-                            color: '#fff', // white for dark mode
-                            font: {
-                              size: 14,
-                            },
+                  data={{
+                    labels: trendData.labels,
+                    datasets: [
+                      {
+                        label: 'Spending Over Time',
+                        data: trendData.data,
+                        fill: false,
+                        borderColor: '#EF4444', // 🔴 red line
+                        backgroundColor: '#EF4444',
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: {
+                        labels: {
+                          color: '#fff', // white for dark mode
+                          font: {
+                            size: 14,
                           },
                         },
-                        title: {
-                          display: true,
-                          text: 'Monthly Spending',
+                      },
+                      title: {
+                        display: true,
+                        text: 'Monthly Spending',
+                        color: '#fff',
+                        font: {
+                          size: 18,
+                        },
+                      },
+                    },
+                    scales: {
+                      x: {
+                        ticks: {
                           color: '#fff',
                           font: {
-                            size: 18,
+                            size: 14,
                           },
+                        },
+                        grid: {
+                          color: '#444',
                         },
                       },
-                      scales: {
-                        x: {
-                          ticks: {
-                            color: '#fff',
-                            font: {
-                              size: 14,
-                            },
-                          },
-                          grid: {
-                            color: '#444',
+                      y: {
+                        ticks: {
+                          color: '#fff',
+                          font: {
+                            size: 14,
                           },
                         },
-                        y: {
-                          ticks: {
-                            color: '#fff',
-                            font: {
-                              size: 14,
-                            },
-                          },
-                          grid: {
-                            color: '#444',
-                          },
+                        grid: {
+                          color: '#444',
                         },
                       },
-                    }}
-                  />
+                    },
+                  }}
+                />
               </div>
             </div>
 
@@ -270,7 +236,6 @@ const [trendData, setTrendData] = useState(null)
                 ))}
               </ul>
             </div>
-
 
             {/* Smart Suggestions Component
             <Suggestions expenses={expenses} /> */}
