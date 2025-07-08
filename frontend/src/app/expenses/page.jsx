@@ -11,12 +11,13 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger
 } from '@/components/ui/popover'
-import { Dialog, DialogContent, DialogTitle} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState([])
+  const [budgets, setBudgets] = useState([])
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('')
@@ -29,6 +30,7 @@ export default function ExpensesPage() {
   const [formData, setFormData] = useState({
     amount: '',
     category: '',
+    budget: '',
     date: '',
     paymentMethod: '',
     notes: ''
@@ -54,12 +56,24 @@ export default function ExpensesPage() {
     }
   }
 
+  const fetchBudgets = async () => {
+    try {
+      const res = await axiosInstance.get('/api/budget/getAllBudgets')
+      console.log('📊 Budget API response:', res.data)
+      console.log('📊 Budgets array:', res.data.budgets)
+      setBudgets(res.data.budgets || [])
+    } catch (err) {
+      console.error('Failed to fetch budgets:', err.message)
+    }
+  }
+
   useEffect(() => {
     fetchExpenses()
+    fetchBudgets()
   }, [])
 
   const openAddModal = () => {
-    setFormData({ amount: '', category: '', date: '', paymentMethod: '', notes: '' })
+    setFormData({ amount: '', category: '', budget: '', date: '', paymentMethod: '', notes: '' })
     setEditExpense(null)
     setIsModalOpen(true)
   }
@@ -68,6 +82,7 @@ export default function ExpensesPage() {
     setFormData({
       amount: expense.amount,
       category: expense.category,
+      budget: expense.budget || '',
       date: expense.date.split('T')[0],
       paymentMethod: expense.paymentMethod,
       notes: expense.notes || ''
@@ -91,17 +106,29 @@ export default function ExpensesPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    console.log('🚀 Submitting expense with data:', formData)
+    console.log('🎯 Budget ID being sent:', formData.budget)
+
     try {
       if (editExpense) {
+        console.log('✏️ Updating expense:', editExpense._id)
+        await axiosInstance.put(`/api/expenses/${editExpense._id}`, formData)
         await axiosInstance.put(`/api/expenses/${editExpense._id}`, formData)
         alert('Expense updated')
       } else {
-        await axiosInstance.post('/api/expenses/addExpense', formData)
+        console.log('➕ Creating new expense')
+        // await axiosInstance.post('/api/expenses/addExpense', formData)
+        const response = await axiosInstance.post('/api/expenses/addExpense', formData)
+        console.log('✅ Expense creation response:', response.data)
+        
         alert('Expense added')
       }
       setIsModalOpen(false)
       fetchExpenses()
     } catch (err) {
+      console.error('❌ Error saving expense:', err)
+      console.error('❌ Error response:', err.response?.data)
       console.error(err)
       alert('Error saving expense')
     }
@@ -187,6 +214,7 @@ export default function ExpensesPage() {
               <thead className="bg-muted text-left">
                 <tr>
                   <th className="px-4 py-2">Amount</th>
+                  <th className="px-4 py-2">Budget</th>
                   <th className="px-4 py-2">Category</th>
                   <th className="px-4 py-2">Date</th>
                   <th className="px-4 py-2">Method</th>
@@ -198,6 +226,7 @@ export default function ExpensesPage() {
                 {expenses.map((exp) => (
                   <tr key={exp._id} className="border-t border-border">
                     <td className="px-4 py-2">₹ {exp.amount}</td>
+                    <td className="px-4 py-2">{exp.budget?.name || 'No Budget'}</td>
                     <td className="px-4 py-2">{exp.category}</td>
                     <td className="px-4 py-2">{new Date(exp.date).toLocaleDateString()}</td>
                     <td className="px-4 py-2">{exp.paymentMethod}</td>
@@ -212,65 +241,126 @@ export default function ExpensesPage() {
             </table>
           </div>
         )}
-<Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+
+        {/* Add/Edit Expense Modal */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
   <DialogContent>
     <DialogTitle>{editExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
+    <DialogDescription>
+      {editExpense ? 'Update your expense details.' : 'Add a new expense and assign it to a budget.'}
+    </DialogDescription>
+
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        type="number"
-        placeholder="Amount"
-        value={formData.amount}
-        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-        required
-      />
+      {/* Amount Input */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Amount</label>
+        <Input
+          type="number"
+          placeholder="Amount"
+          value={formData.amount}
+          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+          required
+        />
+      </div>
 
-      {/* Category Select using ShadCN */}
-      <Select
-        value={formData.category}
-        onValueChange={(value) => setFormData({ ...formData, category: value })}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select Category" />
-        </SelectTrigger>
-        <SelectContent>
-          {['Food', 'Rent', 'Healthcare', 'Shopping', 'EMIs', 'Travel', 'other'].map((cat) => (
-            <SelectItem key={cat} value={cat}>
-              {cat}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Budget Select */}
+      <div className="border-2 border-red-500 p-4 rounded-lg">
+        <label className="block text-sm font-medium mb-1 text-red-600">🚨 Budget Selection (Debug Mode)</label>
+        <Select
+          value={formData.budget}
+          onValueChange={(value) => {
+            console.log('🔥 Budget selected:', value)
+            setFormData({ ...formData, budget: value })
+          }}
+        >
+          <SelectTrigger className="w-full border-red-300">
+            <SelectValue placeholder="Select Budget" />
+          </SelectTrigger>
+          <SelectContent>
+            {budgets.length === 0 ? (
+              <SelectItem value="no-budgets" disabled>
+                ⚠️ No budgets available - Create a budget first
+              </SelectItem>
+            ) : (
+              budgets.map((budget) => (
+                <SelectItem key={budget._id} value={budget._id}>
+                  🏦 {budget.name} - {budget.month} (₹{budget.limit})
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-red-600 mt-1 font-bold">
+          🔍 DEBUG: Budgets found: {budgets.length} | Current value: {formData.budget || 'none'}
+        </p>
+        <div className="text-xs text-gray-500 mt-2">
+          <p>📝 Debug Info:</p>
+          <pre>{JSON.stringify(budgets, null, 2)}</pre>
+        </div>
+      </div>
 
-      <Input
-        type="date"
-        value={formData.date}
-        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-        required
-      />
+      {/* Category Select */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Category</label>
+        <Select
+          value={formData.category}
+          onValueChange={(value) => setFormData({ ...formData, category: value })}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select Category" />
+          </SelectTrigger>
+          <SelectContent>
+            {['Food', 'Rent', 'Healthcare', 'Shopping', 'EMIs', 'Travel', 'other'].map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      {/* Payment Method Select using ShadCN */}
-      <Select
-        value={formData.paymentMethod}
-        onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select Payment Method" />
-        </SelectTrigger>
-        <SelectContent>
-          {['UPI', 'Credit Card', 'Debit Card', 'Cash', 'Net Banking'].map((method) => (
-            <SelectItem key={method} value={method}>
-              {method}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Date Input */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Date</label>
+        <Input
+          type="date"
+          value={formData.date}
+          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+          required
+        />
+      </div>
 
-      <Input
-        placeholder="Notes (optional)"
-        value={formData.notes}
-        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-      />
+      {/* Payment Method Select */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Payment Method</label>
+        <Select
+          value={formData.paymentMethod}
+          onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select Payment Method" />
+          </SelectTrigger>
+          <SelectContent>
+            {['UPI', 'Credit Card', 'Debit Card', 'Cash', 'Net Banking'].map((method) => (
+              <SelectItem key={method} value={method}>
+                {method}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
+      {/* Notes Input */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Notes (Optional)</label>
+        <Input
+          placeholder="Notes (optional)"
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+        />
+      </div>
+
+      {/* Submit Button */}
       <Button type="submit">
         {editExpense ? 'Update Expense' : 'Add Expense'}
       </Button>

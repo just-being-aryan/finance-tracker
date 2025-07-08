@@ -79,10 +79,6 @@ export const getCategorySpending = asyncHandler(async (req, res) => {
 
   const expenses = await Expense.find({
     user: userId,
-    date: {
-      $gte: new Date(`${currentMonth}-01`),
-      $lt: new Date(`${currentMonth}-31`),
-    },
   })
 
   const categorySpending = {}
@@ -107,10 +103,7 @@ export const getTopPaymentMethods = asyncHandler(async (req, res) => {
 
   const expenses = await Expense.find({
     user: userId,
-    date: {
-      $gte: new Date(`${currentMonth}-01`),
-      $lt: new Date(`${currentMonth}-31`),
-    },
+
   })
 
   const methodCount = {}

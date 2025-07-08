@@ -5,46 +5,52 @@ import Sidebar from '@/component/Sidebar'
 import axiosInstance from '@/utils/axiosInstance'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
-const categories = [
-  'Food', 'Rent', 'Healthcare', 'Shopping', 'EMIs', 'Travel', 'Other'
+const months = [
+  'July', 'August', 'September', 'October', 'November', 'December'
 ]
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [formData, setFormData] = useState({ category: '', limit: '' })
+  const [formData, setFormData] = useState({ name: '', limit: '', month: '', nameType: '' })
   const [alerts, setAlerts] = useState([])
-  const [editingCategory, setEditingCategory] = useState(null)
+  const [editingBudget, setEditingBudget] = useState(null)
 
- const fetchBudgets = async () => {
-  try {
-    const res = await axiosInstance.get('/api/budget')
-    console.log("📦 Raw Budget API response:", res.data)
+  const fetchBudgets = async () => {
+    try {
+      const res = await axiosInstance.get('/api/budget')
+      console.log("📦 Raw Budget API response:", res.data)
 
-    const extractedBudgets = Array.isArray(res.data.budget) ? res.data.budget : []
+      console.log("📦 Budget array:", res.data.budget)
+    console.log("📦 Is array?", Array.isArray(res.data.budget))
 
-    setBudgets(extractedBudgets)
-  } catch (err) {
-    console.error('Failed to fetch budgets:', err)
-    setBudgets([])
+      const extractedBudgets = Array.isArray(res.data.budget) ? res.data.budget : []
+      console.log("📦 Extracted budgets:", extractedBudgets)
+      setBudgets(extractedBudgets)
+    } catch (err) {
+      console.error('Failed to fetch budgets:', err)
+      setBudgets([])
+    }
   }
-}
-
 
   const fetchAlerts = async () => {
     try {
       const res = await axiosInstance.get('/api/budget/getBudgetAlerts')
-      const alertMessage = res.data?.alert
+      const alertData = res.data?.alerts || []
 
-      if (alertMessage && alertMessage.length > 0) {
-        if (alertMessage.includes('100%') && alertMessage.includes('exceeded')) {
-          alert(`🔴 ${alertMessage}`)
-        } else if (alertMessage.includes('80%')) {
-          alert(`🟠 ${alertMessage}`)
+      // Process each alert
+        alertData.forEach(alertItem => {
+        if (alertItem.status === 'overbudget') {
+          alert(`🔴 Budget Alert: ${alertItem.name} has exceeded its limit! Spent: ₹${alertItem.spent} / ₹${alertItem.budget} (${alertItem.usagePercent}%)`)
+        } else if (alertItem.status === 'warning') {
+          alert(`🟠 Budget Warning: ${alertItem.name} is at ${alertItem.usagePercent}% of its limit. Spent: ₹${alertItem.spent} / ₹${alertItem.budget}`)
         }
-      }
+
+      })
+      
+      setAlerts(alertData)
     } catch (err) {
       console.error('Failed to fetch alerts:', err)
     }
@@ -55,29 +61,58 @@ export default function BudgetsPage() {
     fetchAlerts()
   }, [])
 
-  const openAddOrEditModal = (category = '') => {
-    if (category) {
-      const existing = budgets.find(b => b.category === category)
-      setFormData({ category, limit: existing?.limit || '' })
-      setEditingCategory(category)
+  const openAddOrEditModal = (budget = null) => {
+    if (budget) {
+      setFormData({ 
+        name: budget.name, 
+        limit: budget.limit || '', 
+        month: budget.month,
+        nameType: months.includes(budget.name) ? budget.name : 'Custom'
+      })
+      setEditingBudget(budget)
     } else {
-      setFormData({ category: '', limit: '' })
-      setEditingCategory(null)
+      setFormData({ name: '', limit: '', month: '', nameType: '' })
+      setEditingBudget(null)
     }
     setIsModalOpen(true)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Prepare the final form data
+    const submitData = {
+      name: formData.nameType === 'Custom' ? formData.name : formData.nameType,
+      limit: formData.limit,
+      month: formData.month
+    }
+     if (editingBudget) {
+      submitData.budgetId = editingBudget._id
+    }
+    
     try {
-      await axiosInstance.post('/api/budget/createOrUpdateBudget', formData)
-      alert(editingCategory ? 'Budget updated' : 'Budget added')
+      await axiosInstance.post('/api/budget/createOrUpdateBudget', submitData)
+      alert(editingBudget ? 'Budget updated' : 'Budget added')
       fetchBudgets()
       fetchAlerts()
       setIsModalOpen(false)
     } catch (err) {
       console.error('Failed to save budget:', err)
       alert('Error saving budget')
+    }
+  }
+
+  const handleDeleteBudget = async (budgetId) => {
+    if (!confirm('Are you sure you want to delete this budget?')) return
+    
+    try {
+      await axiosInstance.delete(`/api/budget/${budgetId}`)
+      alert('Budget deleted successfully')
+      fetchBudgets()
+      fetchAlerts()
+    } catch (err) {
+      console.error('Failed to delete budget:', err)
+      alert('Error deleting budget')
     }
   }
 
@@ -105,22 +140,35 @@ export default function BudgetsPage() {
 
               return (
                 <div
-                  key={budget._id || budget.category}
+                  key={budget._id || budget.name}
                   className="border border-border rounded-xl p-4 shadow-sm"
                 >
-                  <h2 className="text-xl font-semibold mb-2">{budget.category}</h2>
+                  <h2 className="text-xl font-semibold mb-2">{budget.name}</h2>
+                  <p className="text-sm text-muted-foreground mb-2">{budget.month}</p>
                   <p>Limit: ₹ {budget.limit}</p>
                   <p>Spent: ₹ {budget.spent}</p>
+                  <p>Remaining: ₹ {budget.remaining}</p>
                   <p className={`font-bold ${color}`}>
                     Used: {Math.min(percentage, 100).toFixed(1)}%
                   </p>
                   <Button
                     size="sm"
                     className="mt-3"
-                    onClick={() => openAddOrEditModal(budget.category)}
+                    onClick={() => openAddOrEditModal(budget)}
                   >
-                    {percentage ? 'Update Budget' : 'Set Budget'}
+                    Update Budget
                   </Button>
+
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="mt-3 ml-2"
+                    onClick={() => handleDeleteBudget(budget._id)}
+                  >
+                    Delete Budget
+                  </Button>
+
+                  
                 </div>
               )
             })}
@@ -130,29 +178,74 @@ export default function BudgetsPage() {
         {/* Add/Edit Modal */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent>
-            <DialogTitle>{editingCategory ? 'Update Budget' : 'Add Budget'}</DialogTitle>
+            <DialogTitle>{editingBudget ? 'Update Budget' : 'Add Budget'}</DialogTitle>
+              <DialogDescription>
+              {editingBudget ? 'Update your existing budget details.' : 'Create a new budget to track your expenses.'}
+            </DialogDescription>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <select
-                className="w-full p-2 border rounded dark:bg-black dark:border-gray-700"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
-                disabled={!!editingCategory}
-              >
-                <option value="">Select Category</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+              {/* Budget Name Type Selection */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Budget Name</label>
+                <select
+                  className="w-full p-2 border rounded dark:bg-black dark:border-gray-700"
+                  value={formData.nameType}
+                  onChange={(e) => setFormData({ ...formData, nameType: e.target.value })}
+                  required
+                >
+                  <option value="">Select Month or Custom</option>
+                  {months.map(month => (
+                    <option key={month} value={month}>{month}</option>
+                  ))}
+                  <option value="Custom">Custom</option>
+                </select>
+              </div>
 
-              <Input
-                type="number"
-                placeholder="Monthly Limit (₹)"
-                value={formData.limit}
-                onChange={(e) => setFormData({ ...formData, limit: e.target.value })}
-                required
-              />
-              <Button type="submit">{editingCategory ? 'Update' : 'Save'}</Button>
+              {/* Custom Name Input - Show only when Custom is selected */}
+              {formData.nameType === 'Custom' && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Custom Budget Name</label>
+                  <Input
+                    type="text"
+                    placeholder="Enter custom budget name (e.g., january-budget)"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Month Selection */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Month</label>
+                <select
+                  className="w-full p-2 border rounded dark:bg-black dark:border-gray-700"
+                  value={formData.month}
+                  onChange={(e) => setFormData({ ...formData, month: e.target.value })}
+                  required
+                >
+                  <option value="">Select Month</option>
+                  <option value="2024-07">July 2024</option>
+                  <option value="2024-08">August 2024</option>
+                  <option value="2024-09">September 2024</option>
+                  <option value="2024-10">October 2024</option>
+                  <option value="2024-11">November 2024</option>
+                  <option value="2024-12">December 2024</option>
+                </select>
+              </div>
+
+              {/* Budget Limit */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Budget Limit</label>
+                <Input
+                  type="number"
+                  placeholder="Monthly Limit (₹)"
+                  value={formData.limit}
+                  onChange={(e) => setFormData({ ...formData, limit: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <Button type="submit">{editingBudget ? 'Update' : 'Save'}</Button>
             </form>
           </DialogContent>
         </Dialog>

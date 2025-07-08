@@ -6,13 +6,14 @@ import { Expense } from '../models/expense.model.js'
 
 
 export const addExpense = asyncHandler( async(req,res) => {
+    
 
-    const {amount,category,date,paymentMethod,notes}  = req.body
+    const {amount,category,date,paymentMethod,notes,budget}  = req.body
 
 
-    if(!amount || !category || !date || !paymentMethod) {
+    if(!amount || !category || !date || !paymentMethod || !budget) {
         
-        throw new ApiError(401,'Amount, category, date and paymentMethod are required fields!')
+        throw new ApiError(401,'Amount, category, date , paymentMethod and Budget are required fields!')
 
     }
     
@@ -21,6 +22,7 @@ export const addExpense = asyncHandler( async(req,res) => {
         user : req.user._id,
         amount,
         category,
+        budget,
         date,
         paymentMethod,
         notes
@@ -78,7 +80,7 @@ export const getExpense = asyncHandler ( async (req,res) => {
      // Fetches all matching expenses and Sorts them with newest date first
 
 
-    const expenses = await Expense.find(filter).sort({date : -1})
+     const expenses = await Expense.find(filter).populate('budget', 'name month').sort({date : -1})
 
     res.status(200)
     .json({
@@ -108,6 +110,7 @@ export const updateExpense = asyncHandler ( async (req,res) => {
 
     expense.amount = req.body.amount ?? expense.amount
     expense.category = req.body.category ?? expense.category;
+    expense.budget = req.body.budget ?? expense.budget;
     expense.date = req.body.date ?? expense.date;
     expense.paymentMethod = req.body.paymentMethod ?? expense.paymentMethod;
     expense.notes = req.body.notes ?? expense.notes;

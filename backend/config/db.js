@@ -32,9 +32,9 @@ export const pgPool = new Pool(
           database: process.env.POSTGRES_DB,
           user: process.env.POSTGRES_USER,
           password: process.env.POSTGRES_PASSWORD,
-          ssl: {
-            rejectUnauthorized: false,
-        }
+        //   ssl: {
+        //     rejectUnauthorized: false,
+        // }
 
     }
 )

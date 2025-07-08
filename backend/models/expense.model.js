@@ -19,6 +19,12 @@ const expenseSchema = new mongoose.Schema(
             enum : ['Food', "Rent", "Healthcare", "Shopping", "EMIs", "Travel", "other"]
         },
 
+        budget : {
+            type : mongoose.Schema.Types.ObjectId,
+            ref : "Budget",
+            required : [true,'Budget is required']
+        },
+
         date : {
             type : Date,
             required : [true, 'Date is required']

@@ -7,10 +7,10 @@ const budgetSchema = new mongoose.Schema(
             ref : "User",
             required : true
         },
-        category : {
+        
+        name : {
             type : String,
-            required : [true,'Category is required'],
-           enum : ['Food', "Rent", "Healthcare", "Shopping", "EMIs", "Travel", "other"]
+            required : [true,'Budget name is required']
         },
 
         month : {
