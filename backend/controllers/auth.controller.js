@@ -27,7 +27,7 @@ export const registerUser = asyncHandler(async (req,res) =>{
         throw new ApiError(409, 'User already exists!')
     }
 
-    const hashedPassword = await bcrypt.hash(password,10);
+    const hashedPassword = await bcrypt.hash(password,8);
 
     const newUser = await User.create({
         username,
