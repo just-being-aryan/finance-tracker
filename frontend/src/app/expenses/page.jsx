@@ -59,8 +59,6 @@ export default function ExpensesPage() {
   const fetchBudgets = async () => {
     try {
       const res = await axiosInstance.get('/api/budget/getAllBudgets')
-      console.log('📊 Budget API response:', res.data)
-      console.log('📊 Budgets array:', res.data.budgets)
       setBudgets(res.data.budgets || [])
     } catch (err) {
       console.error('Failed to fetch budgets:', err.message)
@@ -80,12 +78,12 @@ export default function ExpensesPage() {
 
   const openEditModal = (expense) => {
     setFormData({
-      amount: expense.amount,
-      category: expense.category,
-      budget: expense.budget || '',
-      date: expense.date.split('T')[0],
-      paymentMethod: expense.paymentMethod,
-      notes: expense.notes || ''
+      amount: expense?.amount || '',
+      category: expense?.category || '',
+      budget: expense?.budget || '',
+      date: expense?.date ? expense.date.split('T')[0] : '',
+      paymentMethod: expense?.paymentMethod || '',
+      notes: expense?.notes || ''
     })
     setEditExpense(expense)
     setIsModalOpen(true)
@@ -107,28 +105,17 @@ export default function ExpensesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    console.log('🚀 Submitting expense with data:', formData)
-    console.log('🎯 Budget ID being sent:', formData.budget)
-
     try {
       if (editExpense) {
-        console.log('✏️ Updating expense:', editExpense._id)
-        await axiosInstance.put(`/api/expenses/${editExpense._id}`, formData)
         await axiosInstance.put(`/api/expenses/${editExpense._id}`, formData)
         alert('Expense updated')
       } else {
-        console.log('➕ Creating new expense')
-        // await axiosInstance.post('/api/expenses/addExpense', formData)
-        const response = await axiosInstance.post('/api/expenses/addExpense', formData)
-        console.log('✅ Expense creation response:', response.data)
-        
+        await axiosInstance.post('/api/expenses/addExpense', formData)
         alert('Expense added')
       }
       setIsModalOpen(false)
       fetchExpenses()
     } catch (err) {
-      console.error('❌ Error saving expense:', err)
-      console.error('❌ Error response:', err.response?.data)
       console.error(err)
       alert('Error saving expense')
     }
@@ -264,39 +251,29 @@ export default function ExpensesPage() {
       </div>
 
       {/* Budget Select */}
-      <div className="border-2 border-red-500 p-4 rounded-lg">
-        <label className="block text-sm font-medium mb-1 text-red-600">🚨 Budget Selection (Debug Mode)</label>
+      <div>
+        <label className="block text-sm font-medium mb-1">Budget</label>
         <Select
           value={formData.budget}
-          onValueChange={(value) => {
-            console.log('🔥 Budget selected:', value)
-            setFormData({ ...formData, budget: value })
-          }}
+          onValueChange={(value) => setFormData({ ...formData, budget: value })}
         >
-          <SelectTrigger className="w-full border-red-300">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select Budget" />
           </SelectTrigger>
           <SelectContent>
             {budgets.length === 0 ? (
               <SelectItem value="no-budgets" disabled>
-                ⚠️ No budgets available - Create a budget first
+                No budgets available - Create a budget first
               </SelectItem>
             ) : (
               budgets.map((budget) => (
                 <SelectItem key={budget._id} value={budget._id}>
-                  🏦 {budget.name} - {budget.month} (₹{budget.limit})
+                  {budget.name} - {budget.month} (₹{budget.limit})
                 </SelectItem>
               ))
             )}
           </SelectContent>
         </Select>
-        <p className="text-xs text-red-600 mt-1 font-bold">
-          🔍 DEBUG: Budgets found: {budgets.length} | Current value: {formData.budget || 'none'}
-        </p>
-        <div className="text-xs text-gray-500 mt-2">
-          <p>📝 Debug Info:</p>
-          <pre>{JSON.stringify(budgets, null, 2)}</pre>
-        </div>
       </div>
 
       {/* Category Select */}
